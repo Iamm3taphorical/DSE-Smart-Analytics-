@@ -4,7 +4,8 @@ import { GoogleGenerativeAI, HarmBlockThreshold, HarmCategory } from '@google/ge
 // Gemini AI Service
 // ============================================
 
-const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
+// @ts-ignore
+const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY || '';
 
 // Check if API key is configured
 export const isGeminiConfigured = (): boolean => {
