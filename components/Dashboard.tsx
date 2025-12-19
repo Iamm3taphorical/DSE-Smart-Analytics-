@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { useState, useEffect } from 'react';
-import { Search, Bell, Menu, TrendingUp, TrendingDown, LayoutDashboard, Briefcase, FileText, PieChart, Activity, Brain, User, Settings } from 'lucide-react';
+import { Search, Bell, Menu, TrendingUp, TrendingDown, LayoutDashboard, Briefcase, FileText, PieChart, Activity, Brain, User, Settings, Command } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Stock, NewsItem } from '../types';
 import { MOCK_STOCKS, MOCK_NEWS, generateMockChartData, simulatePriceUpdate } from '../services/marketService';
 import { getTechnicalIndicators } from '../services/analyticsService';
@@ -16,7 +17,10 @@ import Portfolio from '../pages/Portfolio';
 import Alerts from '../pages/Alerts';
 import AnalysisMode from '../pages/AnalysisMode';
 import UserProfileModal from './UserProfileModal';
-import { UserProfileProvider } from '../context/UserProfileContext';
+import SearchModal from './SearchModal';
+import { UserProfileProvider, useUserProfile } from '../context/UserProfileContext';
+import { Toaster } from 'react-hot-toast';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface DashboardProps {
   user: { id?: string; name: string; email: string };
@@ -26,12 +30,27 @@ interface DashboardProps {
 type ActiveTab = 'overview' | 'analysis' | 'news' | 'portfolio' | 'alerts';
 
 const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
+  const { t } = useTranslation();
   const [selectedStock, setSelectedStock] = useState<Stock>(MOCK_STOCKS[0]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<ActiveTab>('overview');
   const [searchQuery, setSearchQuery] = useState('');
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showSearchModal, setShowSearchModal] = useState(false);
   const [currentTimeframe, setCurrentTimeframe] = useState('1M');
+  const userId = user.id || user.email || 'demo-user';
+
+  // Keyboard shortcut for search
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setShowSearchModal(true);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Filter stocks based on search
   const filteredStocks = MOCK_STOCKS.filter(s =>
@@ -68,6 +87,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
   };
 
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+
+  const { profile } = useUserProfile();
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
@@ -150,13 +171,17 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
             <div className="flex items-center gap-3 mb-4">
               <button
                 onClick={() => setShowProfileModal(true)}
-                className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-emerald-500 font-bold hover:ring-2 hover:ring-primary transition-all"
+                className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center overflow-hidden hover:ring-2 hover:ring-primary transition-all"
               >
-                {user.name.charAt(0)}
+                {profile?.avatar ? (
+                  <img src={profile.avatar} alt={profile.name} className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-emerald-500 font-bold">{profile?.name?.charAt(0) || user.name.charAt(0) || 'U'}</span>
+                )}
               </button>
               <div className="overflow-hidden flex-1">
-                <p className="text-sm font-medium text-white truncate">{user.name}</p>
-                <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                <p className="text-sm font-medium text-white truncate">{profile?.name || user.name}</p>
+                <p className="text-xs text-gray-500 truncate">{profile?.email || user.email}</p>
               </div>
               <button
                 onClick={() => setShowProfileModal(true)}
@@ -247,149 +272,159 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
         <div className="flex-1 overflow-y-auto p-6 scroll-smooth">
           <div className="max-w-7xl mx-auto space-y-6">
 
-            {activeTab === 'portfolio' ? (
-              <Portfolio />
-            ) : activeTab === 'alerts' ? (
-              <Alerts />
-            ) : activeTab === 'analysis' ? (
-              <AnalysisMode initialStock={selectedStock} />
-            ) : (
-              <>
-                {/* Market Ticker Tape (Static Mock) */}
-                <div className="w-full overflow-hidden bg-emerald-900/10 border border-emerald-500/20 rounded-lg py-2 flex items-center">
-                  <div className="flex gap-8 animate-marquee whitespace-nowrap px-4 text-sm font-mono">
-                    {MOCK_STOCKS.map(s => (
-                      <span key={s.ticker} className="flex items-center gap-2">
-                        <span className="font-bold text-white">{s.ticker}</span>
-                        <span className={s.change >= 0 ? "text-emerald-500" : "text-red-500"}>
-                          {s.price.toFixed(2)} ({s.change > 0 ? '+' : ''}{s.changePercent}%)
-                        </span>
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  {/* Chart Section */}
-                  <div className="lg:col-span-2 space-y-6">
-                    <div className="bg-card border border-border rounded-xl p-6">
-                      <div className="flex justify-between items-start mb-6">
-                        <div>
-                          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                            {selectedStock.ticker}
-                            <span className="text-sm font-normal text-gray-500 px-2 py-0.5 rounded-full bg-secondary border border-border">{selectedStock.sector}</span>
-                          </h2>
-                          <div className="flex items-end gap-3 mt-1">
-                            <span className="text-3xl font-bold text-white">৳ {selectedStock.price}</span>
-                            <span className={`text-lg font-medium flex items-center ${selectedStock.change >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                              {selectedStock.change >= 0 ? <TrendingUp className="w-4 h-4 mr-1" /> : <TrendingDown className="w-4 h-4 mr-1" />}
-                              {selectedStock.change} ({selectedStock.changePercent}%)
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.3 }}
+              >
+                {activeTab === 'portfolio' ? (
+                  <Portfolio />
+                ) : activeTab === 'alerts' ? (
+                  <Alerts />
+                ) : activeTab === 'analysis' ? (
+                  <AnalysisMode initialStock={selectedStock} />
+                ) : (
+                  <>
+                    {/* Market Ticker Tape (Static Mock) */}
+                    <div className="w-full overflow-hidden bg-emerald-900/10 border border-emerald-500/20 rounded-lg py-2 flex items-center">
+                      <div className="flex gap-8 animate-marquee whitespace-nowrap px-4 text-sm font-mono">
+                        {MOCK_STOCKS.map(s => (
+                          <span key={s.ticker} className="flex items-center gap-2">
+                            <span className="font-bold text-white">{s.ticker}</span>
+                            <span className={s.change >= 0 ? "text-emerald-500" : "text-red-500"}>
+                              {s.price.toFixed(2)} ({s.change > 0 ? '+' : ''}{s.changePercent}%)
                             </span>
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          {['1D', '1W', '1M', '6M', '1Y'].map(tf => (
-                            <button
-                              key={tf}
-                              onClick={() => setCurrentTimeframe(tf)}
-                              className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${tf === currentTimeframe ? 'bg-primary text-white border-primary' : 'bg-secondary text-gray-400 hover:text-white border-transparent'} border`}
-                            >
-                              {tf}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      <StockChart data={chartData} color={selectedStock.change >= 0 ? '#10b981' : '#ef4444'} />
-
-                      <div className="grid grid-cols-3 gap-4 mt-6 border-t border-border pt-6">
-                        <div className="text-center">
-                          <p className="text-xs text-gray-500 mb-1">Volume</p>
-                          <p className="font-mono text-white">{selectedStock.volume.toLocaleString()}</p>
-                        </div>
-                        <div className="text-center border-l border-border">
-                          <p className="text-xs text-gray-500 mb-1">Sentiment</p>
-                          <p className={`font-medium ${selectedStock.sentiment === 'Bullish' ? 'text-emerald-500' : selectedStock.sentiment === 'Bearish' ? 'text-red-500' : 'text-yellow-500'}`}>{selectedStock.sentiment}</p>
-                        </div>
-                        <div className="text-center border-l border-border">
-                          <p className="text-xs text-gray-500 mb-1">AI Confidence</p>
-                          <p className="font-mono text-blue-500">{selectedStock.confidence}%</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div id="sector-analysis">
-                      <SectorHeatmap />
-                    </div>
-
-                    {/* News Feed */}
-                    <div id="news-feed" className="bg-card border border-border rounded-xl p-6">
-                      <h3 className="text-lg font-semibold text-white mb-4">Latest Market News</h3>
-                      <div className="space-y-4">
-                        {MOCK_NEWS.map(news => (
-                          <div
-                            key={news.id}
-                            onClick={() => alert(`Opening news article: ${news.title}\nFull analysis feature coming soon!`)}
-                            className="flex gap-4 p-3 rounded-lg hover:bg-secondary/50 transition-colors group cursor-pointer"
-                          >
-                            <div className={`w-1 h-full rounded-full self-stretch ${news.impact === 'Positive' ? 'bg-emerald-500' : news.impact === 'Negative' ? 'bg-red-500' : 'bg-gray-500'}`} />
-                            <div>
-                              <h4 className="text-sm font-medium text-white group-hover:text-emerald-400 transition-colors">{news.title}</h4>
-                              <p className="text-xs text-gray-500 mt-1">{news.source} • {news.time}</p>
-                            </div>
-                          </div>
+                          </span>
                         ))}
                       </div>
                     </div>
-                  </div>
 
-                  {/* Right Column: Watchlist, Top Movers, AI */}
-                  <div className="lg:col-span-1 space-y-6">
-                    <VolatilityAlert stock={selectedStock} />
-
-                    <div id="top-movers">
-                      <TopMovers onSelectStock={setSelectedStock} />
-                    </div>
-
-                    <TechnicalIndicators
-                      indicators={technicalIndicators}
-                      ticker={selectedStock.ticker}
-                    />
-
-                    {/* Watchlist */}
-                    <div className="bg-card border border-border rounded-xl p-6 h-full">
-                      <h3 className="text-lg font-semibold text-white mb-4">Watchlist</h3>
-                      <div className="space-y-2">
-                        {MOCK_STOCKS.map(stock => (
-                          <div
-                            key={stock.ticker}
-                            onClick={() => setSelectedStock(stock)}
-                            className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-all border ${selectedStock.ticker === stock.ticker ? 'bg-secondary border-primary/50' : 'bg-transparent border-transparent hover:bg-secondary'}`}
-                          >
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                      {/* Chart Section */}
+                      <div className="lg:col-span-2 space-y-6">
+                        <div className="bg-card border border-border rounded-xl p-6">
+                          <div className="flex justify-between items-start mb-6">
                             <div>
-                              <p className="font-bold text-sm text-white">{stock.ticker}</p>
-                              <p className="text-xs text-gray-500">{stock.name}</p>
+                              <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                                {selectedStock.ticker}
+                                <span className="text-sm font-normal text-gray-500 px-2 py-0.5 rounded-full bg-secondary border border-border">{selectedStock.sector}</span>
+                              </h2>
+                              <div className="flex items-end gap-3 mt-1">
+                                <span className="text-3xl font-bold text-white">৳ {selectedStock.price}</span>
+                                <span className={`text-lg font-medium flex items-center ${selectedStock.change >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                                  {selectedStock.change >= 0 ? <TrendingUp className="w-4 h-4 mr-1" /> : <TrendingDown className="w-4 h-4 mr-1" />}
+                                  {selectedStock.change} ({selectedStock.changePercent}%)
+                                </span>
+                              </div>
                             </div>
-                            <div className="text-right">
-                              <p className="text-sm font-mono text-white">৳ {stock.price}</p>
-                              <p className={`text-xs ${stock.changePercent >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                                {stock.changePercent > 0 ? '+' : ''}{stock.changePercent}%
-                              </p>
+                            <div className="flex gap-2">
+                              {['1D', '1W', '1M', '6M', '1Y'].map(tf => (
+                                <button
+                                  key={tf}
+                                  onClick={() => setCurrentTimeframe(tf)}
+                                  className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${tf === currentTimeframe ? 'bg-primary text-white border-primary' : 'bg-secondary text-gray-400 hover:text-white border-transparent'} border`}
+                                >
+                                  {tf}
+                                </button>
+                              ))}
                             </div>
                           </div>
-                        ))}
+
+                          <StockChart data={chartData} color={selectedStock.change >= 0 ? '#10b981' : '#ef4444'} />
+
+                          <div className="grid grid-cols-3 gap-4 mt-6 border-t border-border pt-6">
+                            <div className="text-center">
+                              <p className="text-xs text-gray-500 mb-1">Volume</p>
+                              <p className="font-mono text-white">{selectedStock.volume.toLocaleString()}</p>
+                            </div>
+                            <div className="text-center border-l border-border">
+                              <p className="text-xs text-gray-500 mb-1">Sentiment</p>
+                              <p className={`font-medium ${selectedStock.sentiment === 'Bullish' ? 'text-emerald-500' : selectedStock.sentiment === 'Bearish' ? 'text-red-500' : 'text-yellow-500'}`}>{selectedStock.sentiment}</p>
+                            </div>
+                            <div className="text-center border-l border-border">
+                              <p className="text-xs text-gray-500 mb-1">AI Confidence</p>
+                              <p className="font-mono text-blue-500">{selectedStock.confidence}%</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div id="sector-analysis">
+                          <SectorHeatmap />
+                        </div>
+
+                        {/* News Feed */}
+                        <div id="news-feed" className="bg-card border border-border rounded-xl p-6">
+                          <h3 className="text-lg font-semibold text-white mb-4">Latest Market News</h3>
+                          <div className="space-y-4">
+                            {MOCK_NEWS.map(news => (
+                              <div
+                                key={news.id}
+                                onClick={() => alert(`Opening news article: ${news.title}\nFull analysis feature coming soon!`)}
+                                className="flex gap-4 p-3 rounded-lg hover:bg-secondary/50 transition-colors group cursor-pointer"
+                              >
+                                <div className={`w-1 h-full rounded-full self-stretch ${news.impact === 'Positive' ? 'bg-emerald-500' : news.impact === 'Negative' ? 'bg-red-500' : 'bg-gray-500'}`} />
+                                <div>
+                                  <h4 className="text-sm font-medium text-white group-hover:text-emerald-400 transition-colors">{news.title}</h4>
+                                  <p className="text-xs text-gray-500 mt-1">{news.source} • {news.time}</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
                       </div>
-                      <button
-                        onClick={() => alert('Trading feature coming soon! Available for registered brokerage users.')}
-                        className="w-full mt-4 py-2 text-sm text-emerald-500 border border-emerald-500/30 rounded-lg hover:bg-emerald-500/10 transition-colors"
-                      >
-                        + Add Symbol
-                      </button>
+
+                      {/* Right Column: Watchlist, Top Movers, AI */}
+                      <div className="lg:col-span-1 space-y-6">
+                        <VolatilityAlert stock={selectedStock} />
+
+                        <div id="top-movers">
+                          <TopMovers onSelectStock={setSelectedStock} />
+                        </div>
+
+                        <TechnicalIndicators
+                          indicators={technicalIndicators}
+                          ticker={selectedStock.ticker}
+                        />
+
+                        {/* Watchlist */}
+                        <div className="bg-card border border-border rounded-xl p-6 h-full">
+                          <h3 className="text-lg font-semibold text-white mb-4">Watchlist</h3>
+                          <div className="space-y-2">
+                            {MOCK_STOCKS.map(stock => (
+                              <div
+                                key={stock.ticker}
+                                onClick={() => setSelectedStock(stock)}
+                                className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-all border ${selectedStock.ticker === stock.ticker ? 'bg-secondary border-primary/50' : 'bg-transparent border-transparent hover:bg-secondary'}`}
+                              >
+                                <div>
+                                  <p className="font-bold text-sm text-white">{stock.ticker}</p>
+                                  <p className="text-xs text-gray-500">{stock.name}</p>
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-sm font-mono text-white">৳ {stock.price}</p>
+                                  <p className={`text-xs ${stock.changePercent >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                                    {stock.changePercent > 0 ? '+' : ''}{stock.changePercent}%
+                                  </p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          <button
+                            onClick={() => alert('Trading feature coming soon! Available for registered brokerage users.')}
+                            className="w-full mt-4 py-2 text-sm text-emerald-500 border border-emerald-500/30 rounded-lg hover:bg-emerald-500/10 transition-colors"
+                          >
+                            + Add Symbol
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              </>
-            )}
+                  </>
+                )}
+              </motion.div>
+            </AnimatePresence>
 
             <LegalDisclaimer variant="full" className="mt-8" />
           </div>
@@ -420,18 +455,30 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
         }}
       />
 
+      {/* Search Modal */}
+      <SearchModal
+        isOpen={showSearchModal}
+        onClose={() => setShowSearchModal(false)}
+        onSelectStock={(stock) => {
+          setSelectedStock(stock);
+          if (activeTab === 'analysis') {
+            // Force re-analysis if needed or just switch stock
+          }
+        }}
+      />
+
       {/* User Profile Modal */}
       <UserProfileModal
         isOpen={showProfileModal}
         onClose={() => setShowProfileModal(false)}
       />
-    </div>
+    </div >
   );
 };
 
 // Wrap Dashboard with UserProfileProvider
 const DashboardWithProfile: React.FC<DashboardProps> = (props) => (
-  <UserProfileProvider user={{ id: props.user.id || 'default', name: props.user.name, email: props.user.email }}>
+  <UserProfileProvider initialUser={{ id: props.user.id || 'default', name: props.user.name, email: props.user.email }}>
     <Dashboard {...props} />
   </UserProfileProvider>
 );

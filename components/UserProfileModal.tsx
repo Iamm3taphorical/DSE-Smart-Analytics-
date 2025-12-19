@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useState } from 'react';
-import { X, User, Phone, Mail, Camera, Star, Eye, Globe, Palette } from 'lucide-react';
+import { X, User, Phone, Mail, Camera, Star, Eye, Globe, Palette, Upload, Link as LinkIcon, Check } from 'lucide-react';
 import { useUserProfile, AVATAR_OPTIONS } from '../context/UserProfileContext';
 import { UserProfile } from '../types';
 
@@ -21,6 +21,7 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose }) 
     });
 
     const [showAvatarPicker, setShowAvatarPicker] = useState(false);
+    const [customAvatarUrl, setCustomAvatarUrl] = useState('');
 
     // Update form when profile changes
     React.useEffect(() => {
@@ -47,6 +48,14 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose }) 
             preferredLanguage: formData.preferredLanguage as 'en' | 'bn',
         });
         onClose();
+    };
+
+    const handleCustomAvatarSubmit = () => {
+        if (customAvatarUrl) {
+            setFormData(prev => ({ ...prev, avatar: customAvatarUrl }));
+            setCustomAvatarUrl('');
+            setShowAvatarPicker(false);
+        }
     };
 
     const genderOptions: { value: 'male' | 'female' | 'other' | 'prefer-not-to-say'; label: string }[] = [
@@ -95,8 +104,17 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose }) 
                 {/* Avatar Picker */}
                 {showAvatarPicker && (
                     <div className="p-4 border-b border-border bg-secondary/30">
-                        <p className="text-sm text-muted-foreground mb-3">Choose your avatar:</p>
-                        <div className="grid grid-cols-4 gap-3">
+                        <div className="flex items-center justify-between mb-3">
+                            <p className="text-sm font-medium">Choose Avatar</p>
+                            <button
+                                onClick={() => setShowAvatarPicker(false)}
+                                className="text-xs text-muted-foreground hover:text-foreground"
+                            >
+                                Close
+                            </button>
+                        </div>
+
+                        <div className="grid grid-cols-4 gap-3 mb-4">
                             {AVATAR_OPTIONS.map((avatar, idx) => (
                                 <button
                                     key={idx}
@@ -113,6 +131,30 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose }) 
                                     <img src={avatar} alt={`Avatar ${idx + 1}`} className="w-full h-full" />
                                 </button>
                             ))}
+                        </div>
+
+                        <div className="relative">
+                            <label className="text-xs text-muted-foreground mb-1 block">Or use custom URL:</label>
+                            <div className="flex gap-2">
+                                <div className="relative flex-1">
+                                    <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                                    <input
+                                        type="text"
+                                        value={customAvatarUrl}
+                                        onChange={(e) => setCustomAvatarUrl(e.target.value)}
+                                        placeholder="https://..."
+                                        className="w-full bg-secondary border border-border rounded-lg pl-9 pr-3 py-2 text-sm"
+                                    />
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={handleCustomAvatarSubmit}
+                                    disabled={!customAvatarUrl}
+                                    className="px-3 py-2 bg-primary text-primary-foreground rounded-lg disabled:opacity-50"
+                                >
+                                    <Check className="w-4 h-4" />
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )}

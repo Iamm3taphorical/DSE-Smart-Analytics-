@@ -6,6 +6,8 @@ import LoginModal from './components/LoginModal';
 import LanguageToggle from './components/ui/LanguageToggle';
 import ThemeToggle from './components/ui/ThemeToggle';
 import { User } from './types';
+import CustomCursor from './components/ui/CustomCursor';
+import { useGlobalClickSound } from './hooks/useClickSound';
 
 const App: React.FC = () => {
   console.log("App.tsx: Rendering App component...");
@@ -21,8 +23,11 @@ const App: React.FC = () => {
     setUser(null);
   };
 
+  useGlobalClickSound();
+
   return (
     <div className="min-h-screen bg-background text-foreground font-sans">
+      <CustomCursor />
       <div style={{ position: 'fixed', top: 0, right: 0, padding: '5px', background: '#10b981', color: 'white', zIndex: 1000, fontSize: '10px' }}>
         App Component Loaded
       </div>
