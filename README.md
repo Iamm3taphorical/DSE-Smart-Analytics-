@@ -74,8 +74,17 @@ DSE Smart Analytics is a comprehensive platform designed for investors in the Dh
    VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
    ```
 
-4. Run the development server:
+4. Start the Scraper Backend (New!):
    ```bash
+   cd backend
+   npm install
+   node server.js
+   ```
+   *Keeps port 5000 open for real-time DSE data fetching.*
+
+5. Run the development server (in a new terminal):
+   ```bash
+   cd ..
    npm run dev
    ```
 

@@ -5,11 +5,16 @@ export interface Stock {
   change: number;
   changePercent: number;
   volume: number;
+  high?: number;
+  low?: number;
   sector: string;
   peRatio?: number;
   sentiment?: 'Bullish' | 'Bearish' | 'Neutral';
   confidence?: number;
 }
+
+// Alias Stock as StockData for consistency
+export type StockData = Stock;
 
 export interface ChartDataPoint {
   date: string;

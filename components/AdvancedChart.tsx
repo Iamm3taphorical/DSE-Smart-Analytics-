@@ -17,13 +17,15 @@ import { OHLCDataPoint } from '../types';
 import {
     calculateHeikinAshi,
     generateRenko,
+    generatePointFigure,
+    generateKagi,
     analyzeMovingAverages,
     analyzeFibonacci
 } from '../services/chartAnalysisService';
 
 interface AdvancedChartProps {
     data: OHLCDataPoint[];
-    chartType: 'candlestick' | 'bar' | 'area' | 'heikin-ashi' | 'renko';
+    chartType: 'candlestick' | 'bar' | 'area' | 'heikin-ashi' | 'renko' | 'point-and-figure' | 'kagi';
     showMA?: boolean;
     showFibonacci?: boolean;
     showVolume?: boolean;
@@ -56,6 +58,29 @@ const AdvancedChart: React.FC<AdvancedChartProps> = ({
                     brickSize: result.brickSize,
                     low: brick.type === 'up' ? brick.price - result.brickSize : brick.price,
                     high: brick.type === 'up' ? brick.price : brick.price + result.brickSize,
+                    date: brick.date
+                }));
+            }
+            case 'point-and-figure': {
+                const result = generatePointFigure(data);
+                return result.columns.map((col, i) => ({
+                    index: i,
+                    ...col,
+                    // Use array for Floating Bar [min, max]
+                    range: [Math.min(col.startPrice, col.endPrice), Math.max(col.startPrice, col.endPrice)],
+                    boxSize: result.boxSize,
+                    // For dummy x-axis
+                    date: `Col ${i + 1}`
+                }));
+            }
+            case 'kagi': {
+                const result = generateKagi(data);
+                // Flatten lines into points for plotting? 
+                // Kagi is best drawn as segments. We'll map lines to a structure easy to iterate in Custom shape
+                return result.lines.map((line, i) => ({
+                    index: i,
+                    ...line,
+                    date: line.date
                 }));
             }
             default:
@@ -354,6 +379,93 @@ const AdvancedChart: React.FC<AdvancedChartProps> = ({
                                         />
                                     );
                                 }}
+                            />
+                        )}
+
+                        {chartType === 'point-and-figure' && (
+                            <Bar
+                                dataKey="range"
+                                isAnimationActive={false}
+                                shape={(props: any) => {
+                                    const { x, y, width, height, payload } = props;
+                                    if (!payload) return null;
+                                    const { type, boxSize, range } = payload; // range is [min, max]
+                                    const color = type === 'X' ? '#10b981' : '#ef4444';
+
+                                    // Calculate how many boxes
+                                    const min = range[0];
+                                    const max = range[1];
+                                    const numBoxes = Math.round((max - min) / boxSize);
+
+                                    // Need to draw X or O for each "box"
+                                    // Y-axis is already scaled by Recharts? 
+                                    // If dataKey='range', Recharts passes y and height corresponding to the range.
+
+                                    const boxHeight = height / numBoxes;
+
+                                    const elements = [];
+                                    for (let i = 0; i < numBoxes; i++) {
+                                        const currentY = y + height - (i + 1) * boxHeight; // Drawing from bottom up?
+                                        // Actually y is top.
+
+                                        const cy = y + i * boxHeight + boxHeight / 2;
+                                        const cx = x + width / 2;
+                                        const size = Math.min(width, boxHeight) * 0.8;
+
+                                        if (type === 'X') {
+                                            elements.push(
+                                                <g key={i} stroke={color} strokeWidth={2}>
+                                                    <line x1={cx - size / 2} y1={cy - size / 2} x2={cx + size / 2} y2={cy + size / 2} />
+                                                    <line x1={cx + size / 2} y1={cy - size / 2} x2={cx - size / 2} y2={cy + size / 2} />
+                                                </g>
+                                            );
+                                        } else {
+                                            elements.push(
+                                                <circle key={i} cx={cx} cy={cy} r={size / 2} stroke={color} strokeWidth={2} fill="none" />
+                                            );
+                                        }
+                                    }
+
+                                    return <g>{elements}</g>;
+                                }}
+                            />
+                        )}
+
+                        {chartType === 'kagi' && (
+                            <Line
+                                dataKey="endPrice"
+                                dot={false}
+                                stroke="transparent" // We draw custom
+                                isAnimationActive={false}
+                                activeDot={false}
+                                label={(props: any) => {
+                                    // We use label or Custom Shape to draw the lines
+                                    // But Line expects numerical data points.
+                                    // Kagi logic: (x1,y1) to (x2,y1) then to (x2, y2).
+                                    // It's a stepping line.
+                                    // We'll iterate the payload to draw paths.
+                                    // This is tricky in Recharts.
+                                    // Simpler: Draw segments using ReferenceLine? No.
+                                    // Use Bar with 0 width to draw vertical lines?
+
+                                    // Let's use the Custom Shape on a Bar?
+                                    // Or just render a single SVG path via a Custom Component passed to ComposedChart?
+                                    return null;
+                                }}
+                            />
+                        )}
+                        {/* Kagi Custom Overlay */}
+                        {chartType === 'kagi' && (
+                            <Line
+                                type="step"
+                                dataKey="endPrice"
+                                stroke="#10b981"
+                                strokeWidth={2}
+                                dot={false}
+                                isAnimationActive={false}
+                            // This is a simplified Kagi (just stepping line of end prices)
+                            // Ideally we color segments based on type 'yang'/'yin'.
+                            // We can use 'Customized' component from Recharts?
                             />
                         )}
 

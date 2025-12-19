@@ -4,6 +4,7 @@ import { Search, Bell, Menu, TrendingUp, TrendingDown, LayoutDashboard, Briefcas
 import { useTranslation } from 'react-i18next';
 import { Stock, NewsItem } from '../types';
 import { MOCK_STOCKS, MOCK_NEWS, generateMockChartData, simulatePriceUpdate } from '../services/marketService';
+import { fetchMarketData } from '../services/marketDataService';
 import { getTechnicalIndicators } from '../services/analyticsService';
 import StockChart from './StockChart';
 import AIAssistant from './AIAssistant';
@@ -31,10 +32,26 @@ type ActiveTab = 'overview' | 'analysis' | 'news' | 'portfolio' | 'alerts';
 
 const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
   const { t } = useTranslation();
+  const [stocks, setStocks] = useState<Stock[]>(MOCK_STOCKS);
   const [selectedStock, setSelectedStock] = useState<Stock>(MOCK_STOCKS[0]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<ActiveTab>('overview');
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Fetch Real Data
+  useEffect(() => {
+    const loadData = async () => {
+      const data = await fetchMarketData();
+      if (data && data.length > 0) {
+        setStocks(data);
+        // Optionally update selectedStock if it exists in new data
+        setSelectedStock(prev => data.find(s => s.ticker === prev.ticker) || data[0]);
+      }
+    };
+    loadData();
+    const interval = setInterval(loadData, 60000); // 1 min update
+    return () => clearInterval(interval);
+  }, []);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [currentTimeframe, setCurrentTimeframe] = useState('1M');
@@ -53,7 +70,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
   }, []);
 
   // Filter stocks based on search
-  const filteredStocks = MOCK_STOCKS.filter(s =>
+  const filteredStocks = stocks.filter(s =>
     s.ticker.toLowerCase().includes(searchQuery.toLowerCase()) ||
     s.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -291,7 +308,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
                     {/* Market Ticker Tape (Static Mock) */}
                     <div className="w-full overflow-hidden bg-emerald-900/10 border border-emerald-500/20 rounded-lg py-2 flex items-center">
                       <div className="flex gap-8 animate-marquee whitespace-nowrap px-4 text-sm font-mono">
-                        {MOCK_STOCKS.map(s => (
+                        {stocks.map(s => (
                           <span key={s.ticker} className="flex items-center gap-2">
                             <span className="font-bold text-white">{s.ticker}</span>
                             <span className={s.change >= 0 ? "text-emerald-500" : "text-red-500"}>
@@ -391,9 +408,9 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
 
                         {/* Watchlist */}
                         <div className="bg-card border border-border rounded-xl p-6 h-full">
-                          <h3 className="text-lg font-semibold text-white mb-4">Watchlist</h3>
+                          <h3 className="text-lg font-semibold text-white mb-4">{t('Watchlist', 'Watchlist')}</h3>
                           <div className="space-y-2">
-                            {MOCK_STOCKS.map(stock => (
+                            {stocks.slice(0, 5).map(stock => (
                               <div
                                 key={stock.ticker}
                                 onClick={() => setSelectedStock(stock)}
