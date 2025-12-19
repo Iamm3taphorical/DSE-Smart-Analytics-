@@ -1,0 +1,27 @@
+{
+    "common": {
+        "login": "Log In",
+        "getStarted": "Get Started",
+        "dashboard": "Dashboard",
+        "overview": "Overview",
+        "market": "Market",
+        "portfolio": "Portfolio",
+        "news": "News",
+        "analysis": "Analysis",
+        "settings": "Settings",
+        "logout": "Log Out"
+    },
+    "market": {
+        "gainers": "Top Gainers",
+        "losers": "Top Losers",
+        "active": "Most Active",
+        "volume": "Volume",
+        "price": "Price",
+        "change": "Change"
+    },
+    "hero": {
+        "title": "Master the Bangladesh Market",
+        "subtitle": "Replace speculation with data. The first AI-powered analytics platform designed for the Dhaka Stock Exchange.",
+        "cta": "Start Analyzing Now"
+    }
+}

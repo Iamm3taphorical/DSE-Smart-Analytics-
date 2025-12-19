@@ -1,0 +1,325 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================
+   DSE Smart Analytics - Design System
+   ============================================ */
+
+@layer base {
+  :root {
+    /* Dark Theme (Default) */
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    --primary: 158 64% 52%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 158 64% 52%;
+  }
+
+  .light {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    --primary: 158 64% 42%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 158 64% 42%;
+  }
+
+  * {
+    border-color: hsl(var(--border));
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* ============================================
+   Custom Scrollbar
+   ============================================ */
+@layer utilities {
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: hsl(var(--secondary));
+    border-radius: 4px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: hsl(var(--accent));
+    border-radius: 4px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground));
+  }
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--card));
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--accent));
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground));
+}
+
+/* ============================================
+   Finance-Themed Components
+   ============================================ */
+@layer components {
+  /* Stock Price Colors */
+  .price-up {
+    @apply text-bullish;
+  }
+
+  .price-down {
+    @apply text-bearish;
+  }
+
+  .price-neutral {
+    @apply text-neutral;
+  }
+
+  /* Card Variants */
+  .card {
+    @apply bg-card border border-border rounded-xl p-6;
+  }
+
+  .card-elevated {
+    @apply bg-card border border-border rounded-xl p-6 shadow-xl shadow-black/20;
+  }
+
+  .card-interactive {
+    @apply bg-card border border-border rounded-xl p-6 transition-all duration-200
+           hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5;
+  }
+
+  /* Button Variants */
+  .btn {
+    @apply inline-flex items-center justify-center font-medium rounded-lg
+           transition-all duration-200 focus:outline-none focus:ring-2 
+           focus:ring-ring focus:ring-offset-2 focus:ring-offset-background
+           disabled:opacity-50 disabled:pointer-events-none;
+  }
+
+  .btn-primary {
+    @apply btn bg-primary text-primary-foreground hover:bg-primary/90
+           shadow-lg shadow-primary/20;
+  }
+
+  .btn-secondary {
+    @apply btn bg-secondary text-secondary-foreground border border-border
+           hover:bg-accent hover:text-accent-foreground;
+  }
+
+  .btn-ghost {
+    @apply btn hover:bg-accent hover:text-accent-foreground;
+  }
+
+  .btn-sm {
+    @apply h-8 px-3 text-sm;
+  }
+
+  .btn-md {
+    @apply h-10 px-4 text-sm;
+  }
+
+  .btn-lg {
+    @apply h-12 px-6 text-base;
+  }
+
+  /* Input Variants */
+  .input {
+    @apply w-full bg-secondary border border-border rounded-lg px-4 py-2
+           text-foreground placeholder:text-muted-foreground
+           focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent
+           transition-all duration-200;
+  }
+
+  /* Badge Variants */
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .badge-bullish {
+    @apply badge bg-bullish/10 text-bullish border border-bullish/20;
+  }
+
+  .badge-bearish {
+    @apply badge bg-bearish/10 text-bearish border border-bearish/20;
+  }
+
+  .badge-neutral {
+    @apply badge bg-neutral/10 text-neutral border border-neutral/20;
+  }
+
+  /* Glassmorphism */
+  .glass {
+    @apply bg-card/80 backdrop-blur-xl border border-white/10;
+  }
+
+  /* Gradient Backgrounds */
+  .gradient-primary {
+    @apply bg-gradient-to-r from-primary to-cyan-500;
+  }
+
+  .gradient-text {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-cyan-500;
+  }
+
+  /* Stock Ticker Tape */
+  .ticker-tape {
+    @apply flex gap-8 animate-marquee whitespace-nowrap font-mono text-sm;
+  }
+
+  /* Market Status Indicator */
+  .market-status {
+    @apply inline-flex items-center gap-2 px-3 py-1 rounded-full 
+           bg-secondary border border-border text-xs font-medium;
+  }
+
+  .market-status-dot {
+    @apply relative flex h-2 w-2;
+  }
+
+  .market-status-dot-ping {
+    @apply animate-ping absolute inline-flex h-full w-full rounded-full opacity-75;
+  }
+
+  .market-status-dot-core {
+    @apply relative inline-flex rounded-full h-2 w-2;
+  }
+
+  /* Stat Card */
+  .stat-card {
+    @apply card flex flex-col gap-2;
+  }
+
+  .stat-label {
+    @apply text-xs text-muted-foreground uppercase tracking-wider;
+  }
+
+  .stat-value {
+    @apply text-2xl font-bold font-mono;
+  }
+
+  .stat-change {
+    @apply text-sm font-medium flex items-center gap-1;
+  }
+}
+
+/* ============================================
+   Animation Utilities
+   ============================================ */
+@layer utilities {
+  .animate-in {
+    animation-fill-mode: forwards;
+  }
+
+  .delay-100 {
+    animation-delay: 100ms;
+  }
+
+  .delay-200 {
+    animation-delay: 200ms;
+  }
+
+  .delay-300 {
+    animation-delay: 300ms;
+  }
+
+  .delay-400 {
+    animation-delay: 400ms;
+  }
+
+  .delay-500 {
+    animation-delay: 500ms;
+  }
+}
+
+/* ============================================
+   Loading States
+   ============================================ */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton {
+  @apply bg-gradient-to-r from-secondary via-accent to-secondary;
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* ============================================
+   Chart Tooltips
+   ============================================ */
+.recharts-tooltip-wrapper {
+  outline: none !important;
+}
+
+.recharts-default-tooltip {
+  @apply !bg-card !border-border !rounded-lg !shadow-xl;
+}
+
+/* ============================================
+   Responsive Utilities
+   ============================================ */
+@layer utilities {
+  .container-tight {
+    @apply max-w-5xl mx-auto px-4;
+  }
+
+  .container-wide {
+    @apply max-w-7xl mx-auto px-4;
+  }
+}
