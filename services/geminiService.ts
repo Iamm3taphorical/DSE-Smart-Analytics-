@@ -77,8 +77,9 @@ interface AnalysisContext {
   };
 }
 
-export const sendMessage = async (
+export const chatWithGemini = async (
   message: string,
+  history: any[], // Accepts frontend chat history
   context?: AnalysisContext
 ): Promise<string> => {
   // Check if Gemini is configured
@@ -109,21 +110,39 @@ ${context?.indicators?.rsi ? `RSI is at ${context.indicators.rsi.toFixed(1)} - $
       if (context.page) contextStr += `Page: ${context.page}\n`;
       if (context.indicators) {
         contextStr += 'Technical Indicators:\n';
-        if (context.indicators.rsi) contextStr += `- RSI (14): ${context.indicators.rsi.toFixed(2)}\n`;
+        if (context.indicators.rsi) contextStr += `- RSI (14): ${Number(context.indicators.rsi).toFixed(2)}\n`;
         if (context.indicators.macd) {
-          contextStr += `- MACD: ${context.indicators.macd.value.toFixed(2)} (Signal: ${context.indicators.macd.signal.toFixed(2)})\n`;
+          contextStr += `- MACD: ${Number(context.indicators.macd.value).toFixed(2)} (Signal: ${Number(context.indicators.macd.signal).toFixed(2)})\n`;
         }
-        if (context.indicators.sma20) contextStr += `- SMA 20: ৳${context.indicators.sma20.toFixed(2)}\n`;
-        if (context.indicators.sma50) contextStr += `- SMA 50: ৳${context.indicators.sma50.toFixed(2)}\n`;
+        if (context.indicators.sma20) contextStr += `- SMA 20: ৳${Number(context.indicators.sma20).toFixed(2)}\n`;
+        if (context.indicators.sma50) contextStr += `- SMA 50: ৳${Number(context.indicators.sma50).toFixed(2)}\n`;
         if (context.indicators.sentiment) contextStr += `- Sentiment: ${context.indicators.sentiment}\n`;
       }
     }
 
     const fullMessage = `${SYSTEM_INSTRUCTIONS}\n\n${contextStr}\n\nUser question: ${message}`;
 
-    // Start or continue chat
+    // Map frontend history to Gemini format (excluding the very recent user msg which is usually passed as 'message' arg, but let's see how startChat uses it)
+    // startChat history excludes the current prompt.
+    // Frontend history passed here includes ALL messages usually? 
+    // AIAssistant calls setMessages first, then calls chatWithGemini.
+    // So 'history' contains the current user message.
+    // We should filter it out or use history up to now.
+    // Actually, model.startChat takes previous history.
+
+    const geminiHistory = history
+      .filter(msg => msg.id !== 'welcome') // Remove local welcome
+      .map(h => ({
+        role: h.role,
+        parts: [{ text: h.text }]
+      }));
+
+    // If history contains the current message, we should remove it from geminiHistory to avoid duplication or pass it as 'message' only.
+    // Usually 'startChat' is for *prior* turns.
+    // We'll use the prompt 'fullMessage' as the new turn.
+
     const chat = model.startChat({
-      history: chatHistory,
+      history: geminiHistory.slice(0, -1), // Exclude last message which is likely the user's prompt we are handling
       generationConfig: {
         maxOutputTokens: 1024,
         temperature: 0.7,
@@ -132,17 +151,6 @@ ${context?.indicators?.rsi ? `RSI is at ${context.indicators.rsi.toFixed(1)} - $
 
     const result = await chat.sendMessage(fullMessage);
     const response = result.response.text();
-
-    // Update chat history
-    chatHistory.push(
-      { role: 'user', parts: [{ text: message }] },
-      { role: 'model', parts: [{ text: response }] }
-    );
-
-    // Keep history manageable
-    if (chatHistory.length > 20) {
-      chatHistory = chatHistory.slice(-20);
-    }
 
     return response;
   } catch (error: any) {
