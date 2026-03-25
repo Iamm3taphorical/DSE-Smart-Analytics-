@@ -86,9 +86,9 @@ DSE Smart Analytics is a comprehensive platform designed for investors in the Dh
    npm run dev
    ```
 
-## 📝 License
+##  License
 This project is licensed under the MIT License.
 
-## 👨‍💻 Developer
-Developed with ❤️ by **Mahir Dyan**
+##  Developer
+Developed by **Mahir Dyan**
 [GitHub Profile](https://github.com/iamm3taphorical)
