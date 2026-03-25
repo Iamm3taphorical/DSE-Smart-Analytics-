@@ -90,5 +90,4 @@ DSE Smart Analytics is a comprehensive platform designed for investors in the Dh
 This project is licensed under the MIT License.
 
 ##  Developer
-Developed by **Mahir Dyan**
-[GitHub Profile](https://github.com/iamm3taphorical)
+Developed by [**Mahir Dyan**](https://github.com/iamm3taphorical)
